@@ -10,5 +10,8 @@ variable "cert_dir" {
 variable "ca_cert_dir" {
   type=string
 }
+variable "users" {
+  type = set(string)
+}
 
 

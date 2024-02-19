@@ -1,26 +1,29 @@
-resource "tls_private_key" "user_keys" {
+resource "tls_private_key" "user_key" {
 
+  for_each = var.users
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
 resource "tls_cert_request" "user_req" {
-
-  private_key_pem = tls_private_key.user_keys.private_key_pem
+  
+  for_each = var.users
+  private_key_pem = tls_private_key.user_key[each.key].private_key_pem
   subject {
-    common_name  = "tf"
-    organization = "tf-org"
+    common_name  = "${each.key}"
+    organization = "${each.key}-org"
   }
 }
 
 resource "kubernetes_certificate_signing_request_v1" "user_csr" {
 
+  for_each = var.users
   metadata {
-    name = "tf-csr"
+    name = "${each.key}-csr"
   }
 
   spec {
-    request = tls_cert_request.user_req.cert_request_pem
+    request = tls_cert_request.user_req[each.key].cert_request_pem
     signer_name = "kubernetes.io/kube-apiserver-client"
     usages    = ["digital signature", "key encipherment", "client auth"]
   }
@@ -28,6 +31,7 @@ resource "kubernetes_certificate_signing_request_v1" "user_csr" {
 
 resource "local_file" "kubeconfig" {
 
+  for_each = var.users
   content = <<-EOF
 apiVersion: v1
 clusters:
@@ -38,39 +42,48 @@ clusters:
 contexts:
 - context:
     cluster: my-cluster
-    user: my-user
+    user: ${each.key}
   name: my-context
 current-context: my-context
 kind: Config
 preferences: {}
 users:
-- name: my-user
+- name: ${each.key}
   user:
-    client-certificate: "user.crt"
-    client-key: "user.key"
+    client-certificate: "${each.key}.crt"
+    client-key: "${each.key}.key"
 EOF
 
-  filename = "${var.cert_dir}/config"
+  filename = "${var.cert_dir}/${each.key}/config"
 }
 
 resource "local_file" "user_cert" {
-  content = "${kubernetes_certificate_signing_request_v1.user_csr.certificate}"
-  filename = "${var.cert_dir}/user.crt"
+
+  for_each = var.users
+  content = "${kubernetes_certificate_signing_request_v1.user_csr[each.key].certificate}"
+  filename = "${var.cert_dir}/${each.key}/${each.key}.crt"
 }
 resource "local_file" "user_key" {
-  content = "${tls_private_key.user_keys.private_key_pem}"
-  filename = "${var.cert_dir}/user.key"
-}
-resource "local_file" "ca_crt" {
-  content = "${file("${var.ca_cert_dir}/ca.crt")}"
-  filename = "${var.cert_dir}/ca.crt"
+
+  for_each = var.users
+  content = "${tls_private_key.user_key[each.key].private_key_pem}"
+  filename = "${var.cert_dir}/${each.key}/${each.key}.key"
 }
 
-resource "kubernetes_role" "example" {
+resource "local_file" "ca_crt" {
+
+  for_each = var.users
+  content = "${file("${var.ca_cert_dir}/ca.crt")}"
+  filename = "${var.cert_dir}/${each.key}/ca.crt"
+}
+
+resource "kubernetes_role" "role" {
+
+  for_each = var.users
   metadata {
-    name = "tf"
+    name = "${each.key}"
     labels = {
-      test = "MyRole"
+      role = "${each.key}"
     }
   }
 
@@ -81,19 +94,21 @@ resource "kubernetes_role" "example" {
   }
 }
 
-resource "kubernetes_role_binding" "example" {
+resource "kubernetes_role_binding" "rolebinding" {
+
+  for_each = var.users
   metadata {
-    name      = "tf"
+    name      = "${each.key}"
     namespace = "default"
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "Role"
-    name      = "tf"
+    name      = "${each.key}"
   }
   subject {
     kind      = "User"
-    name      = "tf"
+    name      = "${each.key}"
     api_group = "rbac.authorization.k8s.io"
   }
 }
