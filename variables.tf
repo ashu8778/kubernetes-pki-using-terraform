@@ -14,4 +14,21 @@ variable "users" {
   type = set(string)
 }
 
+variable "roles" {
+ /* Example of role datatype
+roles = {
+  "user1" = {
+    "pods"=["get","list"]
+  },
+  "user2" = {
+    "pods"=["get","list"],
+    "deployments"=["get","list"]
+  }
+}
+*/
+  type = map
+}
 
+variable "api_groups" {
+  type = map(list(string))
+}

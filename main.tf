@@ -79,7 +79,7 @@ resource "local_file" "ca_crt" {
 
 resource "kubernetes_role" "role" {
 
-  for_each = var.users
+  for_each = var.roles
   metadata {
     name = "${each.key}"
     labels = {
@@ -87,11 +87,14 @@ resource "kubernetes_role" "role" {
     }
   }
 
-  rule {
-    api_groups     = [""]
-    resources      = ["pods"]
-    verbs          = ["get", "list", "watch"]
+   dynamic "rule" {
+    for_each = each.value
+    content {
+    api_groups     = var.api_groups[rule.key]
+    resources      = [rule.key]
+    verbs          = rule.value
   }
+   }
 }
 
 resource "kubernetes_role_binding" "rolebinding" {
