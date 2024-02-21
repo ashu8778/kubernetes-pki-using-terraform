@@ -11,7 +11,7 @@ resource "tls_cert_request" "user_req" {
   private_key_pem = tls_private_key.user_key[each.key].private_key_pem
   subject {
     common_name  = "${each.key}"
-    organization = "${each.key}-org"
+    organization = "${each.value}"
   }
 }
 
