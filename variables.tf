@@ -1,7 +1,9 @@
 variable "kube_api_address" {
   type=string
 }
-variable "config_path" {
+
+variable "kube_config_path" {
+  # Only for local testing
   type=string
 }
 variable "cert_dir" {
@@ -9,6 +11,7 @@ variable "cert_dir" {
 }
 variable "ca_cert_dir" {
   type=string
+  default = "/var/run/secrets/kubernetes.io/serviceaccount"
 }
 variable "users" {
   type = map(string)
