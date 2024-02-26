@@ -36,3 +36,5 @@ terraform.rc
 
 terraform-serviceaccount-roles-and-permissions
 helm
+k8s-pki-infra-terraform.png
+readme.md
