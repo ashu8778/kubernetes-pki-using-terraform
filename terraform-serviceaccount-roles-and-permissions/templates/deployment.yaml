@@ -46,14 +46,22 @@ spec:
         #   httpGet:
         #     path: /
         #     port: http
+        env:
+        - name: TFVARS
+          value: {{.Values.tfvarsLocation.dir}}/terraform.tfvars
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
         volumeMounts:
+        - name: terraform-tfvars
+          mountPath: {{.Values.tfvarsLocation.dir}}
         {{- range .Values.volumesData}}
         - mountPath: {{.mountPath}}
           name: {{.name}}
         {{- end}}
       volumes:
+      - name: terraform-tfvars
+        configMap:
+          name: terraform-tfvars
       {{- range .Values.volumesData}}
       - name: {{.name}}
         hostPath:

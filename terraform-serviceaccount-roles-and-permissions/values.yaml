@@ -63,3 +63,6 @@ volumesData:
   hostPath:
     path: /certificates
     type: DirectoryOrCreate
+
+tfvarsLocation:
+  dir: /tfvar
