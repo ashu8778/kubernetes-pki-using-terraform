@@ -1,4 +1,3 @@
-#Initial Dockerfile
 From hashicorp/terraform:1.7.0
 
 RUN mkdir /kubernetes-pki
