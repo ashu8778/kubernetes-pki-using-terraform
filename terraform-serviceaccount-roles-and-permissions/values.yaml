@@ -1,0 +1,54 @@
+replicaCount: 1
+
+image:
+  repository: terraform-pki
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "v0.1.0"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: "terraform-pki"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "terraform-pki"
+
+clusterroleRules:
+  # Terraform requires all permissions, so that it can provide those to users. Some of the common api groups included. 
+  # TODO: Restrict some permissions to be allowed to new users. 
+  - apiGroups: [""]
+    resources: ["*"]
+    verbs: ["*"]
+  - apiGroups: ["extensions", "apps", "batch", "rbac.authorization.k8s.io", "certificates.k8s.io"]
+    resources: ["*"]
+    verbs: ["*"]
+
+
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  # minReplicas: 1
+  # maxReplicas: 1
+  # targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
