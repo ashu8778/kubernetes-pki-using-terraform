@@ -4,7 +4,7 @@ image:
   repository: terraform-pki
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v0.1.0"
+  tag: "v0.1.1"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -52,3 +52,14 @@ tolerations: []
 
 affinity: {}
 
+volumesData:
+- name: volume-0
+  mountPath: /kubernetes-pki
+  hostPath:
+    path: /kubernetes-pki
+    type: DirectoryOrCreate
+- name: volume-1
+  mountPath: /certificates
+  hostPath:
+    path: /certificates
+    type: DirectoryOrCreate
