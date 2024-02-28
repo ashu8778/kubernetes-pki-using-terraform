@@ -33,7 +33,7 @@ spec:
         - name: volume-0
           mountPath: /tmp/kubernetes-pki
       containers:
-      - name: {{ .Chart.Name }}
+      - name: {{ include "terraform-serviceaccount-roles-and-permissions.fullname" . }}
         securityContext:
           {{- toYaml .Values.securityContext | nindent 12 }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
