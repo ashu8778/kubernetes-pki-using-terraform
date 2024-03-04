@@ -1,19 +1,21 @@
 #!/bin/sh
 
-hash="$(sha256sum $TFVARS|cut -d ' ' -f 1)"
-terraform apply --var-file=$TFVARS -auto-approve
-if [ $? -ne 0 ]; then
-  retry "terraform apply --var-file=$TFVARS -auto-approve"
+echo "pod started.." 
+if [ "$(sha256sum last_applied_config |cut -d ' ' -f 1)" = "$(sha256sum $TFVARS|cut -d ' ' -f 1)" ];then
+  echo terraform infra is in sync.
 fi
 
 while true;do
-  if [ "$hash" != "$(sha256sum $TFVARS|cut -d ' ' -f 1)" ];then
-    echo "Variable file is updated. Applying new changes."
+  if [ "$(sha256sum last_applied_config |cut -d ' ' -f 1)" != "$(sha256sum $TFVARS|cut -d ' ' -f 1)" ];then
+    echo "Out of sync. Variable file is updated. Applying new changes."
     terraform apply --var-file=$TFVARS -auto-approve
-    if [ $? -ne 0 ]; then
+    if [ $? -eq 0 ]; then
+      cp $TFVARS last_applied_config
+      echo New configuration applied successfully.
+      echo terraform infra is in sync.
+    else
       retry "terraform apply --var-file=$TFVARS -auto-approve"
     fi
-    hash="$(sha256sum $TFVARS|cut -d ' ' -f 1)"
   fi
   # interval period added
   sleep 5
