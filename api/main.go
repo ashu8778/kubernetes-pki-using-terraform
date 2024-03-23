@@ -3,19 +3,23 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 var serviceAccountTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
-var apiEndpoint = "https://kubernetes.default.svc/api/v1/pods"
+var apiEndpoint = "https://kubernetes.default.svc/apis/example.com/v1/users"
 
 var caCertPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
-func getPods(w http.ResponseWriter, r *http.Request) {
+func getUsersList(w http.ResponseWriter, r *http.Request) {
+	var users map[string]interface{}
+
 	caCert, err := os.ReadFile(caCertPath)
 	erChk(err)
 
@@ -43,8 +47,45 @@ func getPods(w http.ResponseWriter, r *http.Request) {
 	defer res.Body.Close()
 	content, err := io.ReadAll(res.Body)
 	erChk(err)
-	fmt.Println(content)
+	fmt.Println("request received..")
 	w.Write(content)
+
+}
+
+func usersCounts(w http.ResponseWriter, r *http.Request) {
+	var users map[string]interface{}
+
+	caCert, err := os.ReadFile(caCertPath)
+	erChk(err)
+
+	serviceAccountToken, err := os.ReadFile(serviceAccountTokenPath)
+	erChk(err)
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	tlsConfig := &tls.Config{
+		RootCAs: caCertPool,
+	}
+
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	req, err := http.NewRequest("GET", apiEndpoint, nil)
+	erChk(err)
+	req.Header.Set("Authorization", "Bearer "+string(serviceAccountToken))
+	res, err := client.Do(req)
+	erChk(err)
+	defer res.Body.Close()
+	content, err := io.ReadAll(res.Body)
+	erChk(err)
+	fmt.Println("request received..")
+	json.Unmarshal(content, &users)
+	length := len(users["items"].([]interface{}))
+	w.Write([]byte(strconv.Itoa(length)))
 
 }
 
@@ -56,7 +97,7 @@ func erChk(err error) {
 
 func main() {
 
-	http.HandleFunc("/pods", getPods)
-
+	http.HandleFunc("/get-users-list", getUsersList)
+	http.HandleFunc("/users-count", usersCounts)
 	http.ListenAndServe(":8080", nil)
 }
