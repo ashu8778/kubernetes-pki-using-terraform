@@ -4,7 +4,7 @@ image:
   repository: terraform-pki
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.1.0"
+  tag: "0.2.0"
 
 imagePullSecrets: []
 nameOverride: ""
@@ -28,8 +28,6 @@ clusterroleRules:
   - apiGroups: ["extensions", "apps", "batch", "rbac.authorization.k8s.io", "certificates.k8s.io", "example.com"]
     resources: ["*"]
     verbs: ["*"]
-
-
 
 resources: {}
   # limits:
@@ -65,7 +63,7 @@ volumesData:
     type: DirectoryOrCreate
 
 tfvarsLocation:
-  dir: /tfvar
+  dir: /kubernetes-pki
 
 usersCrdSchema:
   openAPIV3Schema:
