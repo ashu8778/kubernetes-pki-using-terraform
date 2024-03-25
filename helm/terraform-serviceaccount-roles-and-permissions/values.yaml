@@ -4,7 +4,7 @@ image:
   repository: terraform-pki
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "0.1.5"
+  tag: "0.1.0"
 
 imagePullSecrets: []
 nameOverride: ""
