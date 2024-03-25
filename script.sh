@@ -4,25 +4,27 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+config_path="config/config"
+
 terraform init
 
-if [ ! -f last_applied_config ];then
-  touch last_applied_config
+if [ ! -f ${config_path} ];then
+  touch ${config_path}
 fi
 
 echo "pod started.." 
 
-if [ "$(sha256sum last_applied_config |cut -d ' ' -f 1)" = "$(sha256sum $TFVARS|cut -d ' ' -f 1)" ];then
+if [ "$(sha256sum ${config_path} |cut -d ' ' -f 1)" = "$(sha256sum $TFVARS|cut -d ' ' -f 1)" ];then
   printf "terraform infra is in sync.\n---\n"
 fi
 
 while true;do
-  if [ "$(sha256sum last_applied_config |cut -d ' ' -f 1)" != "$(sha256sum $TFVARS|cut -d ' ' -f 1)" ];then
+  if [ "$(sha256sum ${config_path} |cut -d ' ' -f 1)" != "$(sha256sum $TFVARS|cut -d ' ' -f 1)" ];then
     echo "Out of sync. Variable file is updated. Applying new changes."
     terraform apply --var-file=$TFVARS -auto-approve
 
     if [ $? -eq 0 ]; then
-      cp $TFVARS last_applied_config
+      cp $TFVARS ${config_path}
       echo New configuration applied successfully.
       printf "terraform infra is in sync.\n---\n"
     else
