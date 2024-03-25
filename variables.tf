@@ -17,7 +17,7 @@ variable "cacert_path" {
 
 variable "cert_dir" {
   type    = string
-  default = ".user_certificates"
+  default = "/certificates"
 }
 
 # to add user permissions
