@@ -14,6 +14,8 @@ fi
 
 echo "pod started.." 
 
+sh generate_varfile_from_crd.sh
+
 if [ "$(sha256sum ${config_path} |cut -d ' ' -f 1)" = "$(sha256sum $TFVARS|cut -d ' ' -f 1)" ];then
   printf "terraform infra is in sync.\n---\n"
 fi
@@ -35,6 +37,8 @@ while true;do
 
   # config sync interval period added
   sleep 5
+
+  sh generate_varfile_from_crd.sh
 done
 
 retry(){
