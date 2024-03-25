@@ -54,9 +54,9 @@ affinity: {}
 
 volumesData:
 - name: volume-0
-  mountPath: /kubernetes-pki
+  mountPath: /kubernetes-pki/config
   hostPath:
-    path: /kubernetes-pki
+    path: /kubernetes-pki/config
     type: DirectoryOrCreate
 - name: volume-1
   mountPath: /certificates
