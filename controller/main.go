@@ -47,6 +47,7 @@ func getUsersList(w http.ResponseWriter, r *http.Request) {
 	content, err := io.ReadAll(res.Body)
 	erChk(err)
 	fmt.Println("request received..")
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5500")
 	w.Write(content)
 
 }
@@ -84,6 +85,8 @@ func usersCounts(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("request received..")
 	json.Unmarshal(content, &users)
 	length := len(users["items"].([]interface{}))
+	// Allow all origins - for testing
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write([]byte(strconv.Itoa(length)))
 
 }
