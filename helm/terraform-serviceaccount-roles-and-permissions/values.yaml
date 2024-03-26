@@ -54,12 +54,12 @@ volumesData:
 - name: volume-0
   mountPath: /kubernetes-pki/config
   hostPath:
-    path: /kubernetes-pki/config
+    path: /run/desktop/mnt/host/d/kubernetes-pki/config
     type: DirectoryOrCreate
 - name: volume-1
   mountPath: /certificates
   hostPath:
-    path: /certificates
+    path: /run/desktop/mnt/host/d/kubernetes-pki/certificates
     type: DirectoryOrCreate
 
 tfvarsLocation:
