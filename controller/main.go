@@ -18,7 +18,6 @@ var apiEndpoint = "https://kubernetes.default.svc/apis/example.com/v1/users"
 var caCertPath = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
 func getUsersList(w http.ResponseWriter, r *http.Request) {
-	var users map[string]interface{}
 
 	caCert, err := os.ReadFile(caCertPath)
 	erChk(err)
