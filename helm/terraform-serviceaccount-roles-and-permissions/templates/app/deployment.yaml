@@ -52,9 +52,8 @@ spec:
       volumes:
       {{- range .Values.volumesData}}
       - name: {{.name}}
-        hostPath:
-          path: {{.hostPath.path}}
-          type: DirectoryOrCreate
+        persistentVolumeClaim:
+          claimName: {{.name}}-pvc
       {{- end}}
       {{- with .Values.nodeSelector }}
       nodeSelector:
