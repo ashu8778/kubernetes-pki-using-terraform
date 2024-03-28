@@ -47,7 +47,7 @@ func getUsersList(w http.ResponseWriter, r *http.Request) {
 	content, err := io.ReadAll(res.Body)
 	erChk(err)
 	fmt.Println("request received..")
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5500")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Write(content)
 
 }
