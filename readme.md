@@ -1,3 +1,3 @@
-<p>This project utilizes terraform to create PKI for Kubernetes. It allows centralized management of certificates, roles and permissions for Kubernetes.</p>
+<p>This project allows centralized management of certificates, roles and permissions for Kubernetes using User CRD.</p>
 
 <img src="architecture.png">
