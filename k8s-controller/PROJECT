@@ -14,7 +14,7 @@ resources:
   controller: true
   domain: github.com
   group: usermanagement
-  kind: Users
+  kind: User
   path: github.com/ashu8778/kubernetes-user-management/tree/main/k8s-controller/api/v1
   version: v1
 version: "3"

@@ -1,27 +1,23 @@
-# permissions for end users to edit users.
+# permissions for end users to view users.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: users-editor-role
+    app.kubernetes.io/instance: user-viewer-role
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: k8s-controller
     app.kubernetes.io/part-of: k8s-controller
     app.kubernetes.io/managed-by: kustomize
-  name: users-editor-role
+  name: user-viewer-role
 rules:
 - apiGroups:
   - usermanagement.github.com
   resources:
   - users
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - usermanagement.github.com

@@ -23,8 +23,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// UsersSpec defines the desired state of Users
-type UsersSpec struct {
+// UserSpec defines the desired state of User
+type UserSpec struct {
 	RoleRules []RoleRule `json:"roleRules,omitempty"`
 	UserGroup string     `json:"userGroup"`
 }
@@ -35,31 +35,33 @@ type RoleRule struct {
 	Verbs     []string `json:"verbs"`
 }
 
-// UsersStatus defines the observed state of Users
-type UsersStatus struct {
+// UserStatus defines the observed state of User
+type UserStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Users is the Schema for the users API
-type Users struct {
+// User is the Schema for the users API
+type User struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   UsersSpec   `json:"spec"`
-	Status UsersStatus `json:"status,omitempty"`
+	Spec   UserSpec   `json:"spec,omitempty"`
+	Status UserStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// UsersList contains a list of Users
-type UsersList struct {
+// UserList contains a list of User
+type UserList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Users `json:"items"`
+	Items           []User `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Users{}, &UsersList{})
+	SchemeBuilder.Register(&User{}, &UserList{})
 }

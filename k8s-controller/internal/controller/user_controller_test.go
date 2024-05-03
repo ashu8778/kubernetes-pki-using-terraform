@@ -30,7 +30,7 @@ import (
 	usermanagementv1 "github.com/ashu8778/kubernetes-user-management/tree/main/k8s-controller/api/v1"
 )
 
-var _ = Describe("Users Controller", func() {
+var _ = Describe("User Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
 
@@ -40,13 +40,13 @@ var _ = Describe("Users Controller", func() {
 			Name:      resourceName,
 			Namespace: "default", // TODO(user):Modify as needed
 		}
-		users := &usermanagementv1.Users{}
+		user := &usermanagementv1.User{}
 
 		BeforeEach(func() {
-			By("creating the custom resource for the Kind Users")
-			err := k8sClient.Get(ctx, typeNamespacedName, users)
+			By("creating the custom resource for the Kind User")
+			err := k8sClient.Get(ctx, typeNamespacedName, user)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &usermanagementv1.Users{
+				resource := &usermanagementv1.User{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resourceName,
 						Namespace: "default",
@@ -59,16 +59,16 @@ var _ = Describe("Users Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &usermanagementv1.Users{}
+			resource := &usermanagementv1.User{}
 			err := k8sClient.Get(ctx, typeNamespacedName, resource)
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Cleanup the specific resource instance Users")
+			By("Cleanup the specific resource instance User")
 			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
-			controllerReconciler := &UsersReconciler{
+			controllerReconciler := &UserReconciler{
 				Client: k8sClient,
 				Scheme: k8sClient.Scheme(),
 			}

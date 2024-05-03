@@ -1,4 +1,4 @@
 ## Append samples of your project ##
 resources:
-- usermanagement_v1_users.yaml
+- usermanagement_v1_user.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples
