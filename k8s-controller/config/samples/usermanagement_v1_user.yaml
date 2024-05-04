@@ -4,6 +4,23 @@ metadata:
   labels:
     app.kubernetes.io/name: k8s-controller
     app.kubernetes.io/managed-by: kustomize
-  name: user-sample
+  name: user-sample1
 spec:
-  # TODO(user): Add fields here
+  roleRules:
+  - apiGroups:
+    - ""
+    resources:
+    - pods
+    verbs:
+    - get
+    - create
+    - update
+  - apiGroups:
+    - apps
+    resources:
+    - deployments
+    verbs:
+    - get
+    - create
+    - update
+  userGroup: test
