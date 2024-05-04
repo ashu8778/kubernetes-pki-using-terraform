@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,14 +26,8 @@ import (
 
 // UserSpec defines the desired state of User
 type UserSpec struct {
-	RoleRules []RoleRule `json:"roleRules,omitempty"`
-	UserGroup string     `json:"userGroup"`
-}
-
-type RoleRule struct {
-	ApiGroups []string `json:"apiGroups"`
-	Resources []string `json:"resources"`
-	Verbs     []string `json:"verbs"`
+	RoleRules []rbacv1.PolicyRule `json:"roleRules,omitempty"`
+	UserGroup string              `json:"userGroup"`
 }
 
 // UserStatus defines the observed state of User
