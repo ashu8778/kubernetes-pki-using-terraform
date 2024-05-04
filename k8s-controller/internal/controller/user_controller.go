@@ -36,6 +36,14 @@ type UserReconciler struct {
 //+kubebuilder:rbac:groups=usermanagement.github.com,resources=users,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=usermanagement.github.com,resources=users/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=usermanagement.github.com,resources=users/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources="*",verbs="*"
+//+kubebuilder:rbac:groups=extensions,resources="*",verbs="*"
+//+kubebuilder:rbac:groups=apps,resources="*",verbs="*"
+//+kubebuilder:rbac:groups=batch,resources="*",verbs="*"
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources="*",verbs="*"
+//+kubebuilder:rbac:groups=certificates.k8s.io,resources="*",verbs="*"
+//+kubebuilder:rbac:groups=extensions,resources="*",verbs="*"
+//+kubebuilder:rbac:groups=github.com,resources="*",verbs="*"
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
