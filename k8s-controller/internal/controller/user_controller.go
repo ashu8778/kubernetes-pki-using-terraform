@@ -78,7 +78,22 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// If found - create role for user
+	err = r.createRole(ctx, user)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *UserReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&usermanagementv1.User{}).
+		Complete(r)
+}
+
+func (r *UserReconciler) createRole(ctx context.Context, user *usermanagementv1.User) error {
 	// Role specifications
 	blockOwnerDeletion := true
 	role := rbacv1.Role{
@@ -93,18 +108,11 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// Update the role with the user rolr spec
-	err = r.Update(ctx, &role)
+	err := r.Update(ctx, &role)
 	if err != nil {
-		return ctrl.Result{}, err
+		return err
 	}
 
 	fmt.Printf("Resouce role: %v in ns: %v updated\n", role.Name, role.Namespace)
-	return ctrl.Result{}, nil
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *UserReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&usermanagementv1.User{}).
-		Complete(r)
+	return nil
 }
