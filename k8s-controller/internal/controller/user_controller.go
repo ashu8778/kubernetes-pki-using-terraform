@@ -150,6 +150,9 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, err
 	}
 
+	if user.Status.CertificateStatus == "Pending" {
+		return ctrl.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
+	}
 	return ctrl.Result{}, nil
 }
 
@@ -297,13 +300,26 @@ func (r *UserReconciler) autoApproveCsr(ctx context.Context, req ctrl.Request, u
 		return err
 	}
 
+	if csrResource.ObjectMeta.OwnerReferences[0].UID != user.ObjectMeta.UID {
+		fmt.Println("CSR/Certificate creation pending. Already existing csr with same name.")
+		user.Status.CertificateStatus = "Pending"
+		err = r.Status().Update(ctx, user)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	// Approve the CSR if not approved or denied yet
 	if len(csrResource.Status.Conditions) != 0 {
-		if csrResource.Status.Conditions[len(csrResource.Status.Conditions)-1].Type == certv1.CertificateApproved && csrResource.Status.Conditions[len(csrResource.Status.Conditions)-1].Type == certv1.CertificateDenied {
+
+		if csrResource.Status.Conditions[len(csrResource.Status.Conditions)-1].Type == certv1.CertificateApproved || csrResource.Status.Conditions[len(csrResource.Status.Conditions)-1].Type == certv1.CertificateDenied {
+
 			fmt.Println(req.Name, "CSR already approved or denied")
 			return nil
 		}
 	} else {
+
 		csrResource.Status.Conditions = append(csrResource.Status.Conditions, certv1.CertificateSigningRequestCondition{
 			Type:           certv1.CertificateApproved,
 			Status:         corev1.ConditionTrue,
@@ -311,6 +327,7 @@ func (r *UserReconciler) autoApproveCsr(ctx context.Context, req ctrl.Request, u
 			Message:        "This CSR was approved by the controller.",
 			LastUpdateTime: metav1.NewTime(time.Now()),
 		})
+
 		// Update the CSR
 		_, err = clientset.CertificatesV1().CertificateSigningRequests().UpdateApproval(ctx, req.Name, csrResource, metav1.UpdateOptions{})
 		if err != nil {
