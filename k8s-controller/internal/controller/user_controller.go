@@ -24,6 +24,8 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	certv1 "k8s.io/api/certificates/v1"
@@ -32,6 +34,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -79,7 +84,7 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	if err != nil {
 		// If not found, return - no need to create any dependent resource
 		if errors.IsNotFound(err) {
-			fmt.Printf("Resouce user: %v in ns: %v not found\n", req.Name, req.Namespace)
+			fmt.Printf("%v user not found. ns: %v\n", req.Name, req.Namespace)
 			return ctrl.Result{}, nil
 		}
 		fmt.Printf("Error retriving user: %v in ns: %v\n", req.Name, req.Namespace)
@@ -100,31 +105,37 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, err
 	}
 
-	// Check if csr resource exists, if doesen't exist - create csr in kubernetes using csrPem
-	csrResource := &certv1.CertificateSigningRequest{}
-	err = r.Get(ctx, req.NamespacedName, csrResource)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			err := r.createCsrK8s(ctx, user, csrPem)
-			if err != nil {
+	// Check if csr already created and approved
+	if user.Status.CertificateStatus != "Approved" {
+		// Check if csr resource exists, if doesen't exist & csr not approved yet - create csr in kubernetes using csrPem
+		csrResource := &certv1.CertificateSigningRequest{}
+		err = r.Get(ctx, req.NamespacedName, csrResource)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				err := r.createCsrK8s(ctx, user, csrPem)
+				if err != nil {
+					return ctrl.Result{}, err
+				}
+				fmt.Println(req.Name, "CSR created")
+			} else {
 				return ctrl.Result{}, err
 			}
-			fmt.Println("Created CSR in kubernetes")
-		} else {
+		}
+
+		// Approve the csr
+		err = r.autoApproveCsr(ctx, req, user)
+		if err != nil {
 			return ctrl.Result{}, err
 		}
-	}
 
-	// Approve the csr
-	err = r.autoApproveCsr(ctx, req)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+		csrResource = &certv1.CertificateSigningRequest{}
+		err = r.Get(ctx, req.NamespacedName, csrResource)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 
-	csrResource = &certv1.CertificateSigningRequest{}
-	err = r.Get(ctx, req.NamespacedName, csrResource)
-	if err != nil {
-		return ctrl.Result{}, err
+	} else {
+		fmt.Println(req.Name, "CSR already approved")
 	}
 
 	// If user resource is found - create role for user
@@ -164,7 +175,7 @@ func (r *UserReconciler) createRole(ctx context.Context, user *usermanagementv1.
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Resouce role: %v in ns: %v updated\n", role.Name, role.Namespace)
+	fmt.Printf("%v role updated. ns: %v\n", role.Name, role.Namespace)
 	return nil
 }
 
@@ -209,10 +220,14 @@ func (r *UserReconciler) createCsrK8s(ctx context.Context, user *usermanagementv
 	// one month expiry
 	expirationSeconds := int32(2592000)
 	// Kubernetes csr spec
+	blockOwnerDeletion := true
 	csr := &certv1.CertificateSigningRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      user.Name,
 			Namespace: user.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{APIVersion: user.APIVersion, Kind: user.Kind, Name: user.Name, BlockOwnerDeletion: &blockOwnerDeletion, UID: user.UID},
+			},
 		},
 		Spec: certv1.CertificateSigningRequestSpec{
 			Request:    csrPem,
@@ -229,17 +244,27 @@ func (r *UserReconciler) createCsrK8s(ctx context.Context, user *usermanagementv
 	return err
 }
 
-func (r *UserReconciler) autoApproveCsr(ctx context.Context, req ctrl.Request) error {
+func (r *UserReconciler) autoApproveCsr(ctx context.Context, req ctrl.Request, user *usermanagementv1.User) error {
+
+	clientset, err := getK8sClientset()
+	if err != nil {
+		return err
+	}
 
 	// Get fresh obj - Check if csr resource exists
 	csrResource := &certv1.CertificateSigningRequest{}
-	err := r.Get(ctx, req.NamespacedName, csrResource)
+	err = r.Get(ctx, req.NamespacedName, csrResource)
 	if err != nil {
 		return err
 	}
 
-	// Approve the CSR
-	if len(csrResource.Status.Conditions) == 0 {
+	// Approve the CSR if not approved or denied yet
+	if len(csrResource.Status.Conditions) != 0 {
+		if csrResource.Status.Conditions[len(csrResource.Status.Conditions)-1].Type == certv1.CertificateApproved && csrResource.Status.Conditions[len(csrResource.Status.Conditions)-1].Type == certv1.CertificateDenied {
+			fmt.Println(req.Name, "CSR already approved or denied")
+			return nil
+		}
+	} else {
 		csrResource.Status.Conditions = append(csrResource.Status.Conditions, certv1.CertificateSigningRequestCondition{
 			Type:           certv1.CertificateApproved,
 			Status:         corev1.ConditionTrue,
@@ -247,25 +272,44 @@ func (r *UserReconciler) autoApproveCsr(ctx context.Context, req ctrl.Request) e
 			Message:        "This CSR was approved by the controller.",
 			LastUpdateTime: metav1.NewTime(time.Now()),
 		})
-
-	} else if csrResource.Status.Conditions[len(csrResource.Status.Conditions)-1].Status != "Approved" {
-		csrResource.Status.Conditions = append(csrResource.Status.Conditions, certv1.CertificateSigningRequestCondition{
-			Type:           certv1.CertificateApproved,
-			Status:         corev1.ConditionTrue,
-			Reason:         "ControllerApproved",
-			Message:        "This CSR was approved by the controller.",
-			LastUpdateTime: metav1.NewTime(time.Now()),
-		})
-
+		// Update the CSR
+		_, err = clientset.CertificatesV1().CertificateSigningRequests().UpdateApproval(ctx, req.Name, csrResource, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+		user.Status.CertificateStatus = "Approved"
+		err = r.Status().Update(ctx, user)
+		if err != nil {
+			return err
+		}
+		fmt.Println(req.Name, "CSR is approved.")
 	}
-
-	// Update the CSR
-	err = r.Update(ctx, csrResource)
-	if err != nil {
-		return err
-	}
-	fmt.Println("Updated..")
-	fmt.Printf("csrResource is now after update: %v\n\n", csrResource)
 
 	return nil
+}
+
+func getK8sClientset() (*kubernetes.Clientset, error) {
+
+	// Get the path to the kubeconfig file. If it's not provided, assume it's in the default location.
+	kubeconfig := filepath.Join(
+		os.Getenv("HOME"), ".kube", "config",
+	)
+
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		// Load kubeconfig file
+		fmt.Println("Not running inside cluster. Use local config")
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Create the Kubernetes clientset
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return clientset, nil
 }
