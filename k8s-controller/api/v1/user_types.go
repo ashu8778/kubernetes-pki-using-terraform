@@ -34,6 +34,7 @@ type UserSpec struct {
 type UserStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	CertificateStatus string `json:"certificateStatus,omitempty"`
 }
 
 //+kubebuilder:object:root=true
