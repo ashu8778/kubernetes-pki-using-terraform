@@ -144,7 +144,11 @@ func (r *UserReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, err
 	}
 
-	// createRoleBinding()
+	// create role binding for user
+	err = r.createRoleBinding(ctx, user)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -176,6 +180,41 @@ func (r *UserReconciler) createRole(ctx context.Context, user *usermanagementv1.
 		return err
 	}
 	fmt.Printf("%v role updated. ns: %v\n", role.Name, role.Namespace)
+	return nil
+}
+
+// Create RoleBinding
+func (r *UserReconciler) createRoleBinding(ctx context.Context, user *usermanagementv1.User) error {
+	// RoleBinding specifications
+	blockOwnerDeletion := true
+	roleBinding := rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      user.Name,
+			Namespace: user.Namespace,
+			OwnerReferences: []metav1.OwnerReference{
+				{APIVersion: user.APIVersion, Kind: user.Kind, Name: user.Name, BlockOwnerDeletion: &blockOwnerDeletion, UID: user.UID},
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     user.Name,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				APIGroup: "rbac.authorization.k8s.io",
+				Kind:     "User",
+				Name:     user.Name,
+			},
+		},
+	}
+
+	// Update the role binding with the user rolr spec
+	err := r.Update(ctx, &roleBinding)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%v rolebinding updated. ns: %v\n", roleBinding.Name, roleBinding.Namespace)
 	return nil
 }
 
