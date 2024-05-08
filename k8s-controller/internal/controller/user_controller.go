@@ -163,6 +163,7 @@ func (r *UserReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+// Create role using user crd resource spec permissions
 func (r *UserReconciler) createRole(ctx context.Context, user *usermanagementv1.User) error {
 	// Role specifications
 	blockOwnerDeletion := true
@@ -231,6 +232,7 @@ func (r *UserReconciler) generateKey() (*rsa.PrivateKey, error) {
 	return privateKey, nil
 }
 
+// Get the private key, return raw certificatesigningrequest.
 func (r *UserReconciler) generateCSR(privateKey *rsa.PrivateKey, user *usermanagementv1.User) ([]byte, error) {
 
 	// Create a CSR template
@@ -258,6 +260,7 @@ func (r *UserReconciler) generateCSR(privateKey *rsa.PrivateKey, user *usermanag
 	return csrPem, nil
 }
 
+// Create k8s csr resource
 func (r *UserReconciler) createCsrK8s(ctx context.Context, user *usermanagementv1.User, csrPem []byte) error {
 	// one month expiry
 	expirationSeconds := int32(2592000)
@@ -286,8 +289,10 @@ func (r *UserReconciler) createCsrK8s(ctx context.Context, user *usermanagementv
 	return err
 }
 
+// Auto approves k8s csr created by user crd
 func (r *UserReconciler) autoApproveCsr(ctx context.Context, req ctrl.Request, user *usermanagementv1.User) error {
 
+	// Get the clientset to approve the certificate
 	clientset, err := getK8sClientset()
 	if err != nil {
 		return err
@@ -300,6 +305,7 @@ func (r *UserReconciler) autoApproveCsr(ctx context.Context, req ctrl.Request, u
 		return err
 	}
 
+	// Update the certificateStatus in user crd to pending if csr with same name already exists
 	if csrResource.ObjectMeta.OwnerReferences[0].UID != user.ObjectMeta.UID {
 		fmt.Println("CSR/Certificate creation pending. Already existing csr with same name.")
 		user.Status.CertificateStatus = "Pending"
@@ -333,6 +339,7 @@ func (r *UserReconciler) autoApproveCsr(ctx context.Context, req ctrl.Request, u
 		if err != nil {
 			return err
 		}
+		// Update the certificateStatus to approved
 		user.Status.CertificateStatus = "Approved"
 		err = r.Status().Update(ctx, user)
 		if err != nil {
@@ -344,6 +351,7 @@ func (r *UserReconciler) autoApproveCsr(ctx context.Context, req ctrl.Request, u
 	return nil
 }
 
+// Generates k8s clientset
 func getK8sClientset() (*kubernetes.Clientset, error) {
 
 	// Get the path to the kubeconfig file. If it's not provided, assume it's in the default location.
@@ -351,10 +359,11 @@ func getK8sClientset() (*kubernetes.Clientset, error) {
 		os.Getenv("HOME"), ".kube", "config",
 	)
 
+	// Check if the controller is running inside cluster
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		// Load kubeconfig file
-		fmt.Println("Not running inside cluster. Use local config")
+		// Load kubeconfig file - controller is not running inside cluster
+		fmt.Println("Controller not running inside cluster. Use local config")
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
 			return nil, err
